@@ -16,32 +16,66 @@ import controller from './controller';
 
 controller(camera);
 
-import { interval, getGravitate, random, collision } from './util';
+import { interval, getGravitate2, random, collision } from './util';
 
 
 const galaxy = [];
 
+window.createSphere = function(opt) {
+	galaxy.push(new Sphere(opt));
+}
+
 galaxy.push(new Sphere({
-	size: 100,
+	size: 1000,
 	x: 100,
 	y: 0,
-	angle: 120,
-	speed: .3,
+	angle: 0,
+	speed: 0,
 	ctx,
+	color: '#900',
 }));
 
 
+// galaxy.push(new Sphere({
+// 	size: 10000,
+// 	x: 300,
+// 	y: -100,
+// 	angle: 180,
+// 	speed: 1,
+// 	color: '#090',
+// 	ctx,
+// }));
 
-for (let i = 1000; i--; ) {
+// galaxy.push(new Sphere({
+// 	size: 10,
+// 	x: 200,
+// 	y: -100,
+// 	angle: 180,
+// 	speed: .2,
+// 	ctx,
+// }));
+
+
+
+for (let i = 100; i--; ) {
 	galaxy.push(new Sphere({
-		size: random(1, 10) / 10,
-		x: random(10, 200),
-		y: random(10, 200),
-		angle: random(0, 360),
-		speed: random(10) / 10,
+		size: 1,
+		x: 10,
+		y: i * 3,
+		angle: 0,
+		speed: 1,
 		ctx,
-		color: `rgb(${random(155, 255)},${random(155, 255)},${random(155, 255)})`,
+		color: `rgb(${100 + i * 10},${100 + i * 10},${100 + i * 10})`,
 	}));
+	// galaxy.push(new Sphere({
+	// 	size: random(5, 10) / 2,
+	// 	x: random(10, 200) - 50,
+	// 	y: random(10, 200) - 50,
+	// 	angle: random(0, 360),
+	// 	speed: random(10) / 10,
+	// 	ctx,
+	// 	color: `rgb(${random(155, 255)},${random(155, 255)},${random(155, 255)})`,
+	// }));
 }
 
 
@@ -51,14 +85,7 @@ function loop() {
   galaxy.forEach(sphere => {
 		sphere.move(camera);
 		galaxy.forEach(sphereB => {
-			if (sphereB === sphere) return;
-      if (sphere.died || sphereB.died) return;
-      if (collision(sphere, sphereB)) {
-        sphere.hit(sphereB);
-      } else {
-        const { angle, length } = getGravitate(sphere, sphereB);
-        sphere.update({ angle, length, sphereB });
-      }
+      sphere.meet(sphereB);
 		});
   });
 	// const { angle, length } = getGravitate(galaxy[1], galaxy[0]);

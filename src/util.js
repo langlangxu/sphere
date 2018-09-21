@@ -55,8 +55,7 @@ export function interval(func) {
 }
 
 // @params: sphereA, sphereB
-export function collision(A, B) {
-  const { length } = getGravitate(A, B);
+export function collision(A, B, length) {
   const min = A.r + B.r;
   if (length < min) {
     return true;
@@ -65,7 +64,7 @@ export function collision(A, B) {
 
 
 // 获取两点的距离和角度
-export function getGravitate(pointA, pointB) {
+export function getPosition(pointA, pointB) {
 	/*
 
       pointA
@@ -99,3 +98,20 @@ export function getGravitate(pointA, pointB) {
   // }
   return { angle: E, length: c || 0 };
 };
+
+/*
+  牛顿引力公式
+  F =  GMm / (r * r)
+  @params 质量A ，质量B，距离R
+  return F
+*/
+// const G = 1 / 2;
+// const G = 1;
+const DECAYRATIO = 12;
+export function getGravitate(V1 , V2, R) {
+  // 公式A 牛顿公式
+  // return (V1 * V2) / (R * R);
+  // 公式B 球体表面积公式
+  const decay = (R * R) * DECAYRATIO;
+  return  V1 / decay / V2;
+}

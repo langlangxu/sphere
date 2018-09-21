@@ -1,13 +1,13 @@
-import { getGravitate, getRadius, cos, sin, asin } from './util';
+import { getGravitate, getPosition, getRadius, cos, sin, asin, collision, random } from './util';
 
 // 引力系数 能够控制距离对引力的影响
 // 系数越小，坠落 逃离 的速度阀值越大，
 // const DECAYRATIO = 4 * Math.PI;
-const DECAYRATIO = 6;
-
+const DECAYRATIO = 12;
+const PARTICLE = 3;
 
 class Sphere {
-	constructor({ size, x, y, angle, speed, ctx, color }) {
+	constructor({ size, x, y, angle, speed, ctx, color, count }) {
 		this.ctx = ctx;
 		this.x = x;
 		this.y = y;
@@ -17,26 +17,69 @@ class Sphere {
 		this.speed = speed;
 
 		this.color = color || '#933';
+		this.count = count || 0;
 	}
 	move(camera) {
+		// mock 两个大的先不动
+		// if (this.size === 10000) return this.draw(camera);
 		if (this.died) return;
 		const { x, y } = this.getNext();
 		this.x = x;
 		this.y = y;
 		this.draw(camera);
 	}
-	hit(sphereB) {
+	hit(sphereB, angle) {
 		if (sphereB.size > this.size) {
-			return sphereB.hit(this);
+			return sphereB.hit(this, angle + 180);
 		}
-		
+		// this.blast(sphereB);
+
+		angle = (angle + 180) % 360;
+		const b2 = sphereB.speed * sphereB.size / this.size;
+		// this.update({ angle, b2 });
+
 		this.size += sphereB.size;
 		this.r = getRadius(this.size);
-		// angle += 180;
 		sphereB.died = true;
 	}
+	die() {
+		this.died = true;
+	}
+	blast(sphereB) {
+		this.die();
+		sphereB.die();
+		const size = this.size + sphereB.size;
+		const num = 100;
+
+		for (let i = num; i--; ) {
+			createSphere({
+				size: size / num,
+				x: (this.x + sphereB.x) / 2,
+				y: (this.y + sphereB.y) / 2,
+				speed: .1,
+				ctx: this.ctx,
+				angle: random(0, 359),
+			})
+		}
+
+	}
+	// 计算B对this的影响
+	meet(sphereB) {
+		// 相互作用，必须两个都存在，并且都是激活状态
+		if (this === sphereB) return;
+		if (this.died || sphereB.died) return;
+
+		const { angle, length } = getPosition(this, sphereB);
+		if (collision(this, sphereB, length)) {
+			// 碰撞
+			this.hit(sphereB, angle);
+		} else {
+			this.update({angle, length, sphereB});
+		}
+	}
 	// 受到其他天体影响，改变自身的移动参数
-	update({ angle, length, sphereB}) {
+	update({ angle, length, sphereB, b2}) {
+		angle = angle % 360;
 		/*
 			 											sphereB
 									 B 	       /
@@ -68,15 +111,17 @@ class Sphere {
 
 				求 this 到 B的角度和距离
 		*/
+		
+		// 使用新的引力衰减公式
+		let b = b2 || getGravitate(sphereB.size, this.size, length);
+		if (this.size === 1000) {
 
-		// 变量小写是边，大写是对角
-		// 计算 三角形 this，B ，C
-		// this 到 C 的距离，需要乘一个衰减系数
-		const decay = (length * length) * DECAYRATIO;
-		let b =  sphereB.size / decay;
+			// debugger
+		}
+
 		// b为衰减后引力，考虑this的质量，需要根据this的质量计算对this的偏移量的影响
 		// 即this质量越大，影响越小
-		b = b / this.size;
+		// b = b / this.size;
 
 		const a = this.speed;
 		// this ~ B 为 c
@@ -88,13 +133,18 @@ class Sphere {
 		const c = Math.sqrt(a * a + b * b - 2 * a * b * cos(C));
     const A = asin(b/(c/sin(C)));
 
+    // if (c > 10) {
+    // 	debugger;
+    // }
+    // console.log(length, angle, c, A);
     this.speed = c || 0;
     if (a === 0) {
+    	// this.speed = b;
     	this.angle = angle;
     } else {
     	this.angle += (A || 0);
+    	this.angle = this.angle % 360;
     }
-
 	}
 	// 获取下一个点的坐标
 	getNext() {
